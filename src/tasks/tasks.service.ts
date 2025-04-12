@@ -9,7 +9,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 export class TasksService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(paginationDto?: PaginationDto) {
+    async findAll(paginationDto: PaginationDto) {
         const { limit = 10, offset = 0 } = paginationDto;
 
         const allTasks = await this.prisma.task.findMany({
