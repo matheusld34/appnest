@@ -1,12 +1,10 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
-// > Buscar os detalhes de 1 usuario (CHECK)
-// > Cadastrar usuário (CHECK)
-// > Atualizar um usuário especifico (CHECK)
-// > Deletar usuário
+import { AuthTokenGuard } from 'src/auth/guard/auth-token.guard';
+import { Request } from 'express';
+import { REQUEST_TOKEN_PAYLOAD_NAME } from 'src/auth/common/auth.constants';
 
 @Controller('users')
 export class UsersController {
@@ -25,8 +23,16 @@ export class UsersController {
         return this.userService.create(createUserDto)
     }
 
+    @UseGuards(AuthTokenGuard)
     @Patch(':id')
-    updateUser(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
+    updateUser(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() updateUserDto: UpdateUserDto,
+        @Req() req: Request
+    ) {
+
+        console.log('ID user: ', req[REQUEST_TOKEN_PAYLOAD_NAME]?.sub)
+
         return this.userService.update(id, updateUserDto)
     }
 
