@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthTokenGuard } from 'src/auth/guard/auth-token.guard';
-import { Request } from 'express';
-import { REQUEST_TOKEN_PAYLOAD_NAME } from 'src/auth/common/auth.constants';
+import { TokenPayloadParam } from 'src/auth/param/token-payload.param';
+import { PayloadTokenDto } from 'src/auth/dto/payload-token.dto';
 
 @Controller('users')
 export class UsersController {
@@ -28,17 +28,18 @@ export class UsersController {
     updateUser(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateUserDto: UpdateUserDto,
-        @Req() req: Request
+        @TokenPayloadParam() tokenPayload: PayloadTokenDto
     ) {
-
-        console.log('ID user: ', req[REQUEST_TOKEN_PAYLOAD_NAME]?.sub)
-
-        return this.userService.update(id, updateUserDto)
+        return this.userService.update(id, updateUserDto, tokenPayload)
     }
 
+    @UseGuards(AuthTokenGuard)
     @Delete(':id')
-    deleteUser(@Param('id', ParseIntPipe) id: number) {
-        return this.userService.delete(id)
+    deleteUser(
+        @Param('id', ParseIntPipe) id: number,
+        @TokenPayloadParam() tokenPayload: PayloadTokenDto
+    ) {
+        return this.userService.delete(id, tokenPayload)
     }
 
 }

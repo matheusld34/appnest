@@ -1,13 +1,15 @@
-import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { Task } from './entities/task.entity';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { PrismaService } from '../prisma/prisma.service'
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PayloadTokenDto } from 'src/auth/dto/payload-token.dto';
 
 @Injectable()
 export class TasksService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+    ) { }
 
     async findAll(paginationDto: PaginationDto) {
         const { limit = 10, offset = 0 } = paginationDto;
@@ -32,18 +34,18 @@ export class TasksService {
 
         if (task?.name) return task;
 
-        throw new HttpException("Tarefa não foi encontrada!", HttpStatus.NOT_FOUND)
+        throw new HttpException("Tarefa não foi encontrada!", HttpStatus.BAD_REQUEST)
 
     }
 
-    async create(createTaskDto: CreateTaskDto) {
+    async create(createTaskDto: CreateTaskDto, tokenPayload: PayloadTokenDto) {
         try {
             const newTask = await this.prisma.task.create({
                 data: {
                     name: createTaskDto.name,
                     description: createTaskDto.description,
                     completed: false,
-                    userId: createTaskDto.userId
+                    userId: tokenPayload.sub
                 }
             })
 
@@ -54,7 +56,7 @@ export class TasksService {
         }
     }
 
-    async update(id: number, updateTaskDto: UpdateTaskDto) {
+    async update(id: number, updateTaskDto: UpdateTaskDto, tokenPayload: PayloadTokenDto) {
         try {
             const findTask = await this.prisma.task.findFirst({
                 where: {
@@ -63,6 +65,10 @@ export class TasksService {
             })
 
             if (!findTask) {
+                throw new HttpException("Essa tarefa não existe!", HttpStatus.NOT_FOUND)
+            }
+
+            if (findTask.userId !== tokenPayload.sub) {
                 throw new HttpException("Essa tarefa não existe!", HttpStatus.NOT_FOUND)
             }
 
@@ -85,7 +91,7 @@ export class TasksService {
     }
 
 
-    async delete(id: number) {
+    async delete(id: number, tokenPayload: PayloadTokenDto) {
         try {
             const findTask = await this.prisma.task.findFirst({
                 where: {
@@ -95,6 +101,10 @@ export class TasksService {
 
             if (!findTask) {
                 throw new HttpException("Essa tarefa não existe!", HttpStatus.NOT_FOUND)
+            }
+
+            if (findTask.userId !== tokenPayload.sub) {
+                throw new HttpException("Falha ao deletar essa tarefa!", HttpStatus.BAD_REQUEST)
             }
 
             await this.prisma.task.delete({
