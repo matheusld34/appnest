@@ -6,9 +6,6 @@ import { AuthTokenGuard } from 'src/auth/guard/auth-token.guard';
 import { TokenPayloadParam } from 'src/auth/param/token-payload.param';
 import { PayloadTokenDto } from 'src/auth/dto/payload-token.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as path from 'node:path'
-import * as fs from 'node:fs/promises'
-import { randomUUID } from 'node:crypto';
 
 @Controller('users')
 export class UsersController {
@@ -65,18 +62,7 @@ export class UsersController {
                 }),
         ) file: Express.Multer.File
     ) {
-
-        const mimeType = file.mimetype;
-        const fileExtension = path.extname(file.originalname).toLowerCase().substring(1)
-
-        const fileName = `${tokenPayload.sub}.${fileExtension}`
-
-        const fileLocale = path.resolve(process.cwd(), 'files', fileName)
-
-        await fs.writeFile(fileLocale, file.buffer)
-
-
-        return true
+        return this.userService.uploadAvatarImage(tokenPayload, file)
     }
 
 }
