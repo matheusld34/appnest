@@ -11,6 +11,7 @@ import { UsersService } from "./users.service"
 import { HashingServiceProtocol } from "src/auth/hash/hashing.service";
 import { Test, TestingModule } from "@nestjs/testing";
 import { CreateUserDto } from "./dto/create-user.dto";
+import { HttpException, HttpStatus } from "@nestjs/common";
 
 describe('UsersService', () => {
     let userService: UsersService;
@@ -26,7 +27,12 @@ describe('UsersService', () => {
                     provide: PrismaService,
                     useValue: {
                         user: {
-                            create: jest.fn()
+                            create: jest.fn().mockResolvedValue({
+                                id: 1,
+                                name: 'Matheus',
+                                email: 'matheus@teste.com'
+                            }),
+                            findFirst: jest.fn()
                         }
                     }
                 },
@@ -60,7 +66,7 @@ describe('UsersService', () => {
 
         jest.spyOn(hashingService, 'hash').mockResolvedValue("HASH_MOCK_EXEMPLO")
 
-        await userService.create(createUserDto)
+        const result = await userService.create(createUserDto)
 
         expect(hashingService.hash).toHaveBeenCalled()
 
@@ -74,6 +80,68 @@ describe('UsersService', () => {
                 id: true,
                 name: true,
                 email: true,
+            }
+        })
+
+        expect(result).toEqual({
+            id: 1,
+            name: createUserDto.name,
+            email: createUserDto.email
+        })
+
+    })
+
+
+    it('should return a user when found', async () => {
+        //Arrange
+        const mockUser = {
+            id: 1,
+            name: 'Matheus',
+            email: 'matheus@teste.com',
+            avatar: null,
+            Task: [],
+            passwordHash: 'hash_exemplo',
+            active: true,
+            createdAt: new Date(),
+        }
+
+        jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(mockUser)
+
+        const result = await userService.findOne(1)
+
+        expect(prismaService.user.findFirst).toHaveBeenCalledWith({
+            where: {
+                id: 1,
+            },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                avatar: true,
+                Task: true
+            }
+        })
+
+        expect(result).toEqual(mockUser)
+
+    })
+
+    it('should thorw error exception when user is not found', async () => {
+
+        jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(null)
+
+        await expect(userService.findOne(1)).rejects.toThrow(
+            new HttpException('Usuário não encontrado!', HttpStatus.BAD_REQUEST)
+        )
+
+        expect(prismaService.user.findFirst).toHaveBeenCalledWith({
+            where: { id: 1 },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                avatar: true,
+                Task: true
             }
         })
 
