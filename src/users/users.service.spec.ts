@@ -92,6 +92,39 @@ describe('UsersService', () => {
     })
 
 
+    it('should throw error if prisma create fails', async () => {
+        const createUserDto: CreateUserDto = {
+            email: 'matheus@teste.com',
+            name: 'Matheus',
+            password: '123123'
+        }
+
+        jest.spyOn(hashingService, 'hash').mockResolvedValue('HASH_MOCK_EXEMPLO')
+        jest.spyOn(prismaService.user, 'create').mockRejectedValue(new Error('Database error'))
+
+        await expect(userService.create(createUserDto)).rejects.toThrow(
+            new HttpException('Falha ao cadastrar usuário!', HttpStatus.BAD_REQUEST)
+        )
+
+        expect(hashingService.hash).toHaveBeenCalledWith(createUserDto.password)
+
+        expect(prismaService.user.create).toHaveBeenCalledWith({
+            data: {
+                name: createUserDto.name,
+                email: createUserDto.email,
+                passwordHash: "HASH_MOCK_EXEMPLO",
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+            }
+        })
+
+
+    })
+
+
     it('should return a user when found', async () => {
         //Arrange
         const mockUser = {
