@@ -358,6 +358,67 @@ describe('UsersService', () => {
         })
 
         it('should delete user', async () => {
+            const tokenPayload: PayloadTokenDto = {
+                sub: 1,
+                aud: '',
+                email: 'matheus@teste.com',
+                exp: 123,
+                iat: 123,
+                iss: ''
+            }
+
+            const mockUser = {
+                id: 1,
+                name: 'Matheus',
+                email: 'matheus@teste.com',
+                avatar: null,
+                passwordHash: 'hash_exemplo',
+                active: true,
+                createdAt: new Date(),
+            }
+
+            jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(mockUser)
+            jest.spyOn(prismaService.user, 'delete').mockResolvedValue(mockUser)
+
+            const result = await userService.delete(1, tokenPayload)
+
+            expect(prismaService.user.delete).toHaveBeenCalledWith({
+                where: {
+                    id: mockUser.id
+                }
+            })
+
+            expect(result).toEqual({
+                message: "Usuário foi deletado com sucesso!"
+            })
+
+        })
+
+    })
+
+    describe('Upload Avatar User', () => {
+
+        it('should throw NOT_FOUND when user is not found', async () => {
+            const tokenPayload: PayloadTokenDto = {
+                sub: 1,
+                aud: '',
+                email: 'matheus@teste.com',
+                exp: 123,
+                iat: 123,
+                iss: ''
+            }
+
+            const file = {
+                originalname: 'avatar.png',
+                mimetype: 'image/png',
+                buffer: Buffer.from('')
+            } as Express.Multer.File;
+
+            jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(null)
+
+            await expect(userService.uploadAvatarImage(tokenPayload, file)).rejects.toThrow(
+                new HttpException('Falha ao atualizar o avatar do usuário!', HttpStatus.BAD_REQUEST)
+            )
 
         })
 
