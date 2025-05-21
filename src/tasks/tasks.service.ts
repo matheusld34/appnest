@@ -4,6 +4,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { PrismaService } from '../prisma/prisma.service'
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PayloadTokenDto } from 'src/auth/dto/payload-token.dto';
+import { ResponseTaskDto } from './dto/response-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -11,7 +12,7 @@ export class TasksService {
         private prisma: PrismaService,
     ) { }
 
-    async findAll(paginationDto: PaginationDto) {
+    async findAll(paginationDto: PaginationDto): Promise<ResponseTaskDto[]> {
         const { limit = 10, offset = 0 } = paginationDto;
 
         const allTasks = await this.prisma.task.findMany({
@@ -25,7 +26,7 @@ export class TasksService {
         return allTasks;
     }
 
-    async findOne(id: number) {
+    async findOne(id: number): Promise<ResponseTaskDto> {
         const task = await this.prisma.task.findFirst({
             where: {
                 id: id
@@ -38,7 +39,7 @@ export class TasksService {
 
     }
 
-    async create(createTaskDto: CreateTaskDto, tokenPayload: PayloadTokenDto) {
+    async create(createTaskDto: CreateTaskDto, tokenPayload: PayloadTokenDto): Promise<ResponseTaskDto> {
         try {
             const newTask = await this.prisma.task.create({
                 data: {
@@ -56,7 +57,7 @@ export class TasksService {
         }
     }
 
-    async update(id: number, updateTaskDto: UpdateTaskDto, tokenPayload: PayloadTokenDto) {
+    async update(id: number, updateTaskDto: UpdateTaskDto, tokenPayload: PayloadTokenDto): Promise<ResponseTaskDto> {
         try {
             const findTask = await this.prisma.task.findFirst({
                 where: {
